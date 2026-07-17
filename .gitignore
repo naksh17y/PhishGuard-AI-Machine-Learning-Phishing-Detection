@@ -1,0 +1,13 @@
+# Ignore the virtual environment folder
+venv/
+
+# Ignore large raw data files
+data/*.csv
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# DO NOT ignore the trained model (.pkl)
+# We want the model to upload so the API works
+!models/phishing_rf_model.pkl

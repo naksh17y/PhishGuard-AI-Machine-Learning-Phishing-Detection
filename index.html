@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhishGuard AI | Threat Intelligence</title>
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --danger: #ef4444;
+            --success: #10b981;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        p {
+            color: var(--text-muted);
+        }
+
+        .search-box {
+            background-color: var(--panel-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background-color: #0f172a;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+        }
+
+        button {
+            padding: 1rem 2rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button:disabled {
+            background-color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .results {
+            display: none;
+            background-color: var(--panel-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .status-banner {
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 1.5rem;
+        }
+
+        .status-phishing {
+            background-color: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .status-benign {
+            background-color: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .feature-card {
+            background-color: #0f172a;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .feature-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-value {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+
+        .error-message {
+            color: var(--danger);
+            margin-top: 1rem;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>PhishGuard AI</h1>
+            <p>Enterprise-grade URL threat analysis powered by Machine Learning.</p>
+        </header>
+
+        <div class="search-box">
+            <div class="input-group">
+                <input type="text" id="urlInput" placeholder="Enter a URL to analyze (e.g., http://secure-update-paypal.com)">
+                <button id="scanBtn" onclick="scanUrl()">Scan URL</button>
+            </div>
+            <div id="errorMsg" class="error-message">Unable to connect to the API. Is your FastAPI server running at http://127.0.0.1:8000?</div>
+        </div>
+
+        <div id="resultsPanel" class="results">
+            <div id="statusBanner" class="status-banner">
+                <!-- Result gets injected here -->
+            </div>
+
+            <h3 style="margin-bottom: 1rem; color: var(--text-muted);">Extracted Threat Features</h3>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-label">Confidence Score</div>
+                    <div class="feature-value" id="featConfidence">-</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-label">URL Length</div>
+                    <div class="feature-value" id="featLength">-</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-label">Subdomain Count</div>
+                    <div class="feature-value" id="featSub">-</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-label">Shannon Entropy</div>
+                    <div class="feature-value" id="featEntropy">-</div>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-label">Suspicious Words</div>
+                    <div class="feature-value" id="featWords">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function scanUrl() {
+            const urlInput = document.getElementById('urlInput').value;
+            const scanBtn = document.getElementById('scanBtn');
+            const errorMsg = document.getElementById('errorMsg');
+            const resultsPanel = document.getElementById('resultsPanel');
+            
+            if (!urlInput) return;
+
+            // Reset UI
+            scanBtn.disabled = true;
+            scanBtn.innerText = "Scanning...";
+            errorMsg.style.display = 'none';
+            resultsPanel.style.display = 'none';
+
+            try {
+                // Call your local FastAPI server
+                const response = await fetch('http://127.0.0.1:8000/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url: urlInput })
+                });
+
+                if (!response.ok) throw new Error('API request failed');
+
+                const data = await response.json();
+                
+                // Update UI with results
+                displayResults(data);
+
+            } catch (error) {
+                console.error(error);
+                errorMsg.style.display = 'block';
+            } finally {
+                scanBtn.disabled = false;
+                scanBtn.innerText = "Scan URL";
+            }
+        }
+
+        function displayResults(data) {
+            const resultsPanel = document.getElementById('resultsPanel');
+            const statusBanner = document.getElementById('statusBanner');
+            
+            // Set Banner
+            if (data.prediction === "Phishing") {
+                statusBanner.className = "status-banner status-phishing";
+                statusBanner.innerText = `⚠️ DANGER: Phishing Detected (${data.confidence_score})`;
+            } else {
+                statusBanner.className = "status-banner status-benign";
+                statusBanner.innerText = `✅ SAFE: Benign URL (${data.confidence_score})`;
+            }
+
+            // Set Features
+            document.getElementById('featConfidence').innerText = data.confidence_score;
+            document.getElementById('featLength').innerText = data.extracted_features.url_length;
+            document.getElementById('featSub').innerText = data.extracted_features.subdomain_count;
+            
+            // Round entropy to 2 decimal places for cleaner UI
+            document.getElementById('featEntropy').innerText = parseFloat(data.extracted_features.entropy).toFixed(2);
+            document.getElementById('featWords').innerText = data.extracted_features.has_suspicious_word === 1 ? "Yes" : "No";
+
+            // Show Panel
+            resultsPanel.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
